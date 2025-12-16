@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ai-elements__get_ai_elements_component"
+    ]
+  }
+}
