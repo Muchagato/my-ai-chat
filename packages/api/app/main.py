@@ -79,11 +79,42 @@ async def chat(request: ChatRequest):
         # Send start event
         yield format_sse({"type": "start", "messageId": message_id})
 
-        # Mock reasoning for testing
+        # ============================================================
+        # MOCK REASONING - Remove this block when done testing
+        # ============================================================
         mock_reasoning = "Let me think about this... I need to analyze the user's question and formulate a helpful response."
         yield format_sse({"type": "reasoning-start", "id": reasoning_id})
         yield format_sse({"type": "reasoning-delta", "id": reasoning_id, "delta": mock_reasoning})
         yield format_sse({"type": "reasoning-end", "id": reasoning_id})
+        # ============================================================
+
+        # ============================================================
+        # MOCK TOOL CALL - Remove this block when done testing
+        # ============================================================
+        tool_call_id = f"call-{uuid.uuid4().hex[:8]}"
+        tool_name = "get_weather"
+        yield format_sse({
+            "type": "tool-input-start",
+            "toolCallId": tool_call_id,
+            "toolName": tool_name
+        })
+        yield format_sse({
+            "type": "tool-input-delta",
+            "toolCallId": tool_call_id,
+            "inputTextDelta": json.dumps({"location": "San Francisco", "units": "celsius"})
+        })
+        yield format_sse({
+            "type": "tool-input-available",
+            "toolCallId": tool_call_id,
+            "toolName": tool_name,
+            "input": {"location": "San Francisco", "units": "celsius"}
+        })
+        yield format_sse({
+            "type": "tool-output-available",
+            "toolCallId": tool_call_id,
+            "output": {"temperature": 18, "conditions": "Partly cloudy", "humidity": 65}
+        })
+        # ============================================================
 
         try:
             stream = await client.chat.completions.create(

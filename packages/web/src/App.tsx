@@ -35,7 +35,7 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { Fragment, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, type ToolUIPart } from 'ai';
 import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
 import {
   Source,
@@ -48,6 +48,13 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from '@/components/ai-elements/reasoning';
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
 import { Loader } from '@/components/ai-elements/loader';
 const models = [
   {
@@ -157,6 +164,27 @@ const ChatBotDemo = () => {
                         </Reasoning>
                       );
                     default:
+                      // Handle tool-* types (tool-weather, tool-search, etc.)
+                      if (part.type.startsWith('tool-')) {
+                        const toolPart = part as ToolUIPart;
+                        const toolName = toolPart.type.replace('tool-', '');
+                        return (
+                          <Tool key={`${message.id}-${i}`}>
+                            <ToolHeader
+                              title={toolName}
+                              type={toolPart.type}
+                              state={toolPart.state}
+                            />
+                            <ToolContent>
+                              <ToolInput input={toolPart.input} />
+                              <ToolOutput
+                                output={toolPart.output}
+                                errorText={toolPart.errorText}
+                              />
+                            </ToolContent>
+                          </Tool>
+                        );
+                      }
                       return null;
                   }
                 })}
