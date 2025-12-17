@@ -141,7 +141,7 @@ async def chat(request: ChatRequest):
             yield format_sse({"type": "finish"})
 
         except Exception as e:
-            yield format_sse({"type": "error", "error": str(e)})
+            yield format_sse({"type": "error", "errorText": str(e)})
 
         # Send done marker
         yield "data: [DONE]\n\n"

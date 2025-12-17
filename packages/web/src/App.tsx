@@ -59,7 +59,7 @@ const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [model, setModel] = useState<string>(models[0].value);
   const [webSearch, setWebSearch] = useState(false);
-  const { messages, sendMessage, status, regenerate } = useChat({
+  const { messages, sendMessage, status, regenerate, error } = useChat({
     transport: new DefaultChatTransport({
       api: 'http://localhost:8000/api/chat',
       credentials: 'include',
@@ -93,7 +93,7 @@ const ChatBotDemo = () => {
       <div className="flex flex-col h-full">
         <Conversation className="h-full">
           <ConversationContent>
-            {messages.map((message) => (
+            {messages.map((message, messageIndex) => (
               <div key={message.id}>
                 {message.role === 'assistant' && message.parts.filter((part) => part.type === 'source-url').length > 0 && (
                   <Sources>
@@ -125,7 +125,7 @@ const ChatBotDemo = () => {
                               {part.text}
                             </MessageResponse>
                           </MessageContent>
-                          {message.role === 'assistant' && i === messages.length - 1 && (
+                          {message.role === 'assistant' && messageIndex === messages.length - 1 && (
                             <MessageActions>
                               <MessageAction
                                 onClick={() => regenerate()}
@@ -163,6 +163,15 @@ const ChatBotDemo = () => {
               </div>
             ))}
             {status === 'submitted' && <Loader />}
+            {error && (
+              <Message from="assistant">
+                <MessageContent>
+                  <MessageResponse className="text-red-500">
+                    {`Error: ${error.message}`}
+                  </MessageResponse>
+                </MessageContent>
+              </Message>
+            )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
