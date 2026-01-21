@@ -6,8 +6,6 @@ import {
   PresentationIcon,
   BarChart3Icon,
   LayersIcon,
-  SparklesIcon,
-  ZapIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -15,27 +13,29 @@ import {
 import { Button } from '@/components/ui/button';
 
 const slides = [
-  { id: 0, key: 'why' },
-  { id: 1, key: 'introducing' },
-  { id: 2, key: 'pop' },
+  { id: 0, key: 'ambition' },
+  { id: 1, key: 'primaryflow' },
 ] as const;
 
-function SlideWhy() {
-  const painPoints = [
+function SlideAmbition() {
+  const pillars = [
     {
       icon: DatabaseIcon,
-      title: 'Data Aggregation',
-      description: 'Hours spent collecting data from multiple disconnected sources',
+      title: 'Data Wrangling',
+      description:
+        'Hours spent collecting and cleaning data from multiple disconnected sources',
     },
     {
       icon: PresentationIcon,
-      title: 'Manual Presentations',
-      description: 'Building slides from scratch for every stakeholder meeting',
+      title: 'Streamlined Creation',
+      description:
+        'Less formatting, more value. Less box-moving, faster time to market.',
     },
     {
       icon: BarChart3Icon,
-      title: 'Repetitive Analytics',
-      description: 'Creating the same charts and metrics over and over',
+      title: 'Unified Platform',
+      description:
+        'One place where everything comes together—data, artifacts, and orchestration.',
     },
   ];
 
@@ -47,7 +47,7 @@ function SlideWhy() {
         transition={{ duration: 0.5 }}
         className="text-4xl font-bold mb-4 text-center"
       >
-        Why We Built This
+        Ambition
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
@@ -55,23 +55,24 @@ function SlideWhy() {
         transition={{ duration: 0.5, delay: 0.2 }}
         className="text-muted-foreground text-lg mb-12 text-center max-w-2xl"
       >
-        Your workflow is fragmented. We're here to fix that.
+        Documents and data are scattered across tools. Great work shouldn't be
+        this hard.
       </motion.p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl">
-        {painPoints.map((point, index) => (
+        {pillars.map((pillar, index) => (
           <motion.div
-            key={point.title}
+            key={pillar.title}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 + index * 0.15 }}
             className="flex flex-col items-center text-center p-6 rounded-xl bg-card border"
           >
-            <div className="p-4 rounded-full bg-destructive/10 mb-4">
-              <point.icon className="size-8 text-destructive" />
+            <div className="p-4 rounded-full bg-primary/10 mb-4">
+              <pillar.icon className="size-8 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">{point.title}</h3>
-            <p className="text-muted-foreground">{point.description}</p>
+            <h3 className="text-xl font-semibold mb-2">{pillar.title}</h3>
+            <p className="text-muted-foreground">{pillar.description}</p>
           </motion.div>
         ))}
       </div>
@@ -83,158 +84,53 @@ function SlideWhy() {
         className="mt-12 flex items-center gap-2 text-muted-foreground"
       >
         <LayersIcon className="size-5" />
-        <span className="text-lg">It's time to collapse the complexity.</span>
+        <span className="text-lg">Let's simplify the journey.</span>
       </motion.div>
     </div>
   );
 }
 
-function SlideIntroducing() {
+function SlidePrimaryFlow() {
   const features = [
-    'Unified data integration',
-    'Automated report generation',
-    'Real-time analytics dashboard',
-    'One-click presentations',
+    'Primary data sources and analysis',
+    'Create and schedule integrated document generation',
+    'Orchestrate data and functionality across modules to achieve flow state',
   ];
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-8">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, type: 'spring' }}
-        className="p-6 rounded-full bg-primary/10 mb-8"
-      >
-        <SparklesIcon className="size-16 text-primary" />
-      </motion.div>
-
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="text-4xl md:text-5xl font-bold mb-4 text-center"
+        transition={{ duration: 0.5 }}
+        className="text-4xl md:text-5xl font-bold mb-6 text-center text-primary"
       >
-        Introducing
+        Primary Flow
       </motion.h1>
-
-      <motion.h2
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-        className="text-3xl md:text-4xl font-bold mb-8 text-center text-primary"
-      >
-        Primary Orchestration Platform
-      </motion.h2>
 
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
         className="text-muted-foreground text-lg mb-10 text-center max-w-xl"
       >
-        One platform to orchestrate all your data, insights, and presentations.
+        One place to query, assemble, and orchestrate your day-to-day workflows.
       </motion.p>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {features.map((feature, index) => (
           <motion.div
             key={feature}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.8 + index * 0.1 }}
+            transition={{ duration: 0.4, delay: 0.4 + index * 0.15 }}
             className="flex items-center gap-3"
           >
-            <CheckCircleIcon className="size-5 text-primary" />
+            <CheckCircleIcon className="size-5 text-primary flex-shrink-0" />
             <span className="text-lg">{feature}</span>
           </motion.div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function SlidePop() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full px-8">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="text-2xl text-muted-foreground mb-8 text-center"
-      >
-        <motion.span
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-          className="font-semibold text-foreground"
-        >
-          P
-        </motion.span>
-        rimary{' '}
-        <motion.span
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.4 }}
-          className="font-semibold text-foreground"
-        >
-          O
-        </motion.span>
-        rchestration{' '}
-        <motion.span
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 0.6 }}
-          className="font-semibold text-foreground"
-        >
-          P
-        </motion.span>
-        latform
-      </motion.div>
-
-      <motion.div
-        initial={{ scale: 0, rotate: -180 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{
-          duration: 0.8,
-          delay: 0.8,
-          type: 'spring',
-          stiffness: 200,
-        }}
-        className="relative"
-      >
-        <div className="text-9xl md:text-[12rem] font-black text-primary">
-          POP!
-        </div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3, delay: 1.4 }}
-          className="absolute -top-4 -right-4"
-        >
-          <ZapIcon className="size-12 text-yellow-500 fill-yellow-500" />
-        </motion.div>
-      </motion.div>
-
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 1.6 }}
-        className="text-xl text-muted-foreground mt-8 text-center max-w-lg"
-      >
-        Simple. Powerful. Ready to transform your workflow.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 1.8 }}
-        className="mt-10"
-      >
-        <Button size="lg" className="text-lg px-8">
-          Get Started
-          <ArrowRightIcon className="ml-2 size-5" />
-        </Button>
-      </motion.div>
     </div>
   );
 }
@@ -279,12 +175,10 @@ export function DemoPage() {
 
   const renderSlide = () => {
     switch (slides[currentSlide].key) {
-      case 'why':
-        return <SlideWhy />;
-      case 'introducing':
-        return <SlideIntroducing />;
-      case 'pop':
-        return <SlidePop />;
+      case 'ambition':
+        return <SlideAmbition />;
+      case 'primaryflow':
+        return <SlidePrimaryFlow />;
     }
   };
 
