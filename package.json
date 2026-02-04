@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"pnpm run dev:api\" \"pnpm run dev:web\"",
     "dev:web": "pnpm --filter @my-ai-chat/web dev",
-    "dev:api": "cd packages/api && venv\\Scripts\\uvicorn app.main:app --reload --port 8000",
+    "dev:api": "cd packages/api && .\\venv\\Scripts\\activate && python -m uvicorn app.main:app --reload --port 8000",
+    "dev:proxy": "npx claude-max-api-proxy",
     "build": "pnpm --filter @my-ai-chat/web build",
     "lint": "pnpm --filter @my-ai-chat/web lint",
     "setup:api": "cd packages/api && python -m venv venv && venv\\Scripts\\pip install -r requirements.txt"
   },
   "devDependencies": {
+    "claude-max-api-proxy": "^1.0.0",
     "concurrently": "^9.1.0"
   },
   "dependencies": {

@@ -33,10 +33,10 @@ import {
   PromptInputFooter,
   PromptInputTools,
 } from '@/components/ai-elements/prompt-input';
-import { Fragment, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type ToolUIPart } from 'ai';
-import { CopyIcon, GlobeIcon, RefreshCcwIcon } from 'lucide-react';
+import { CopyIcon, GlobeIcon, RefreshCcwIcon, SettingsIcon } from 'lucide-react';
 import {
   Source,
   Sources,
@@ -55,17 +55,47 @@ import {
   ToolInput,
   ToolOutput,
 } from '@/components/ai-elements/tool';
+import { UITreeRenderer, isUITree } from '@/components/ai-elements/ui-tree-renderer';
 import { Loader } from '@/components/ai-elements/loader';
+import { AuthForm, checkAuthStatus } from '@/components/auth/auth-form';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+
+// Claude models available with your account
+// Note: claude-max-api-proxy uses short model names
 const models = [
   {
-    name: 'Llama 3.1 8B Instruct',
-    value: 'meta-llama/llama-3.3-70b-instruct:free',
-  }
+    name: 'Claude Sonnet 4',
+    value: 'claude-sonnet-4',
+  },
+  {
+    name: 'Claude Opus 4',
+    value: 'claude-opus-4',
+  },
+  {
+    name: 'Claude Haiku 3.5',
+    value: 'claude-haiku-3.5',
+  },
 ];
+
 const ChatBotDemo = () => {
   const [input, setInput] = useState('');
   const [model, setModel] = useState<string>(models[0].value);
   const [webSearch, setWebSearch] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuthStatus().then((status) => {
+      setIsAuthenticated(status.authenticated);
+    });
+  }, []);
+
   const { messages, sendMessage, status, regenerate, error } = useChat({
     transport: new DefaultChatTransport({
       api: 'http://localhost:8000/api/chat',
@@ -73,8 +103,13 @@ const ChatBotDemo = () => {
     }),
     onError: (error) => {
       console.error('Chat error:', error);
+      // Check if it's an auth error
+      if (error.message.includes('401') || error.message.includes('authenticated')) {
+        setIsAuthenticated(false);
+      }
     },
   });
+
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text);
     const hasAttachments = Boolean(message.files?.length);
@@ -82,9 +117,9 @@ const ChatBotDemo = () => {
       return;
     }
     sendMessage(
-      { 
+      {
         text: message.text || 'Sent with attachments',
-        files: message.files 
+        files: message.files
       },
       {
         body: {
@@ -95,6 +130,27 @@ const ChatBotDemo = () => {
     );
     setInput('');
   };
+
+  // Loading state
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader />
+      </div>
+    );
+  }
+
+  // Not authenticated - show auth form
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-screen p-6">
+        <AuthForm
+          onAuthenticated={() => setIsAuthenticated(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
       <div className="flex flex-col h-full">
@@ -168,6 +224,17 @@ const ChatBotDemo = () => {
                       if (part.type.startsWith('tool-')) {
                         const toolPart = part as ToolUIPart;
                         const toolName = toolPart.type.replace('tool-', '');
+
+                        // If output is a UI tree, render it directly in chat (not in collapsible)
+                        if (isUITree(toolPart.output)) {
+                          return (
+                            <div key={`${message.id}-${i}`} className="my-4">
+                              <UITreeRenderer tree={toolPart.output} />
+                            </div>
+                          );
+                        }
+
+                        // Regular tool output - show in collapsible
                         return (
                           <Tool key={`${message.id}-${i}`}>
                             <ToolHeader
@@ -247,6 +314,22 @@ const ChatBotDemo = () => {
                   ))}
                 </PromptInputSelectContent>
               </PromptInputSelect>
+              {/* Settings button to manage authentication */}
+              <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <SettingsIcon size={16} />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <AuthForm
+                    onAuthenticated={() => {
+                      setIsAuthenticated(true);
+                      setAuthDialogOpen(false);
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
             </PromptInputTools>
             <PromptInputSubmit disabled={!input && !status} status={status} />
           </PromptInputFooter>

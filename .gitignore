@@ -36,3 +36,6 @@ coverage/
 
 # Misc
 *.local
+packages/api/.anthropic_token
+nul
+.claude/settings.local.json

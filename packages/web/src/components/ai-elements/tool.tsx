@@ -19,6 +19,7 @@ import {
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";
+import { UITreeRenderer, isUITree } from "./ui-tree-renderer";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -132,6 +133,18 @@ export const ToolOutput = ({
 }: ToolOutputProps) => {
   if (!(output || errorText)) {
     return null;
+  }
+
+  // Check if output is a UI tree and render with json-render
+  if (isUITree(output)) {
+    return (
+      <div className={cn("p-4", className)} {...props}>
+        <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-3">
+          Result
+        </h4>
+        <UITreeRenderer tree={output} />
+      </div>
+    );
   }
 
   let Output = <div>{output as ReactNode}</div>;
