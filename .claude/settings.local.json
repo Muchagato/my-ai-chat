@@ -3,7 +3,10 @@
     "allow": [
       "mcp__ai-elements__get_ai_elements_component",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "Bash(git -C \"c:\\\\Users\\\\tiago\\\\Documents\\\\dev_projects\\\\my-ai-chat\" log --oneline -10)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm install:*)"
     ]
   }
 }

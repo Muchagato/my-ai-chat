@@ -6,12 +6,21 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import {
   TrendingUpIcon,
@@ -20,6 +29,11 @@ import {
   AlertCircleIcon,
   InfoIcon,
   CheckCircleIcon,
+  FilterIcon,
+  XIcon,
+  FileTextIcon,
+  DownloadIcon,
+  PrinterIcon,
 } from 'lucide-react';
 import type { CatalogComponentProps } from './ui-catalog';
 
@@ -436,6 +450,222 @@ export const componentRegistry: ComponentRegistry = {
           </li>
         ))}
       </ListTag>
+    );
+  },
+
+  // ============================================
+  // Filter/Form Components
+  // ============================================
+  FilterPanel: ({
+    element,
+    onAction,
+  }: ComponentRenderProps<CatalogComponentProps['FilterPanel']>) => {
+    const { title, filters, activeFilters = {} } = element.props;
+
+    const renderFilter = (filter: CatalogComponentProps['FilterPanel']['filters'][0]) => {
+      switch (filter.type) {
+        case 'text':
+          return (
+            <Input
+              placeholder={filter.placeholder || `Enter ${filter.label.toLowerCase()}...`}
+              defaultValue={(activeFilters[filter.id] as string) || (filter.value as string) || ''}
+              className="w-full"
+            />
+          );
+        case 'number':
+          return (
+            <Input
+              type="number"
+              placeholder={filter.placeholder || '0'}
+              defaultValue={(activeFilters[filter.id] as number) || (filter.value as number) || ''}
+              className="w-full"
+            />
+          );
+        case 'select':
+          return (
+            <Select defaultValue={(activeFilters[filter.id] as string) || (filter.value as string) || ''}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={filter.placeholder || 'Select...'} />
+              </SelectTrigger>
+              <SelectContent>
+                {filter.options?.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        case 'date':
+          return (
+            <Input
+              type="date"
+              defaultValue={(activeFilters[filter.id] as string) || (filter.value as string) || ''}
+              className="w-full"
+            />
+          );
+        case 'checkbox':
+          return (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                defaultChecked={(activeFilters[filter.id] as boolean) || (filter.value as boolean) || false}
+                className="size-4 rounded border-input"
+              />
+              <span className="text-sm">{filter.placeholder || 'Enable'}</span>
+            </label>
+          );
+        default:
+          return (
+            <Input
+              placeholder={filter.placeholder}
+              defaultValue={(filter.value as string) || ''}
+              className="w-full"
+            />
+          );
+      }
+    };
+
+    return (
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <FilterIcon className="size-5 text-muted-foreground" />
+            <CardTitle className="text-lg">{title || 'Filters'}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filters.map((filter) => (
+              <div key={filter.id} className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  {filter.label}
+                </label>
+                {renderFilter(filter)}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex gap-2 pt-4 border-t">
+          <Button
+            onClick={() => onAction?.({ name: 'applyFilter', params: { filters: activeFilters } } as Action)}
+          >
+            Apply Filters
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onAction?.({ name: 'clearFilters' } as Action)}
+          >
+            <XIcon className="size-4 mr-1" />
+            Clear
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  },
+
+  // ============================================
+  // Document Components
+  // ============================================
+  DocumentPreview: ({
+    element,
+    onAction,
+  }: ComponentRenderProps<CatalogComponentProps['DocumentPreview']>) => {
+    const { title, type, status, sections, metadata } = element.props;
+
+    const statusColors: Record<string, string> = {
+      draft: 'bg-yellow-100 text-yellow-800',
+      final: 'bg-green-100 text-green-800',
+      pending: 'bg-blue-100 text-blue-800',
+    };
+
+    const typeIcons: Record<string, string> = {
+      invoice: 'Invoice',
+      report: 'Report',
+      letter: 'Letter',
+      contract: 'Contract',
+      receipt: 'Receipt',
+      custom: 'Document',
+    };
+
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted">
+                <FileTextIcon className="size-6 text-muted-foreground" />
+              </div>
+              <div>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{typeIcons[type]}</CardDescription>
+              </div>
+            </div>
+            {status && (
+              <span className={cn('px-2 py-1 rounded-full text-xs font-medium', statusColors[status])}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Metadata */}
+          {metadata && Object.keys(metadata).length > 0 && (
+            <div className="grid grid-cols-2 gap-2 p-3 rounded-lg bg-muted/50 text-sm">
+              {Object.entries(metadata).map(([key, value]) => (
+                <div key={key} className="flex justify-between">
+                  <span className="text-muted-foreground">{key}:</span>
+                  <span className="font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Document Sections */}
+          <div className="space-y-4">
+            {sections.map((section, i) => (
+              <div key={i} className="space-y-2">
+                {section.heading && (
+                  <h4 className="font-semibold text-sm">{section.heading}</h4>
+                )}
+                {section.type === 'list' ? (
+                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                    {section.content.split('\n').map((item, j) => (
+                      <li key={j}>{item}</li>
+                    ))}
+                  </ul>
+                ) : section.type === 'signature' ? (
+                  <div className="border-t-2 border-foreground w-48 pt-1 mt-8">
+                    <span className="text-xs text-muted-foreground">{section.content}</span>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {section.content}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="flex gap-2 pt-4 border-t">
+          <Button
+            variant="default"
+            onClick={() => onAction?.({ name: 'downloadDocument', params: { format: 'pdf' } } as Action)}
+          >
+            <DownloadIcon className="size-4 mr-1" />
+            Download PDF
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onAction?.({ name: 'printDocument' } as Action)}
+          >
+            <PrinterIcon className="size-4 mr-1" />
+            Print
+          </Button>
+        </CardFooter>
+      </Card>
     );
   },
 };

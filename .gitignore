@@ -39,3 +39,4 @@ coverage/
 packages/api/.anthropic_token
 nul
 .claude/settings.local.json
+.claude/settings.local.json

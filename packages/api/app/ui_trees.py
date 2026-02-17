@@ -352,6 +352,102 @@ def list_items(
 
 
 # ============================================
+# Filter/Form Components
+# ============================================
+
+def filter_panel(
+    key: str,
+    filters: list[dict],
+    title: str = None,
+    active_filters: dict = None
+) -> tuple[str, dict]:
+    """Create a FilterPanel element for database filtering.
+
+    Args:
+        key: Unique element key
+        filters: List of filter definitions, each with:
+            - id: Filter identifier
+            - label: Display label
+            - type: Filter type ('text', 'select', 'date', 'dateRange', 'checkbox', 'number')
+            - placeholder: Optional placeholder text
+            - options: For 'select' type, list of {"label": "...", "value": "..."}
+            - value: Optional default value
+        title: Optional panel title
+        active_filters: Currently active filter values as {filter_id: value}
+
+    Example:
+        filter_panel("user-filters", [
+            {"id": "name", "label": "Name", "type": "text", "placeholder": "Search by name..."},
+            {"id": "status", "label": "Status", "type": "select", "options": [
+                {"label": "Active", "value": "active"},
+                {"label": "Inactive", "value": "inactive"}
+            ]},
+            {"id": "created_after", "label": "Created After", "type": "date"},
+        ], title="Filter Users")
+    """
+    props = {"filters": filters}
+    if title:
+        props["title"] = title
+    if active_filters:
+        props["activeFilters"] = active_filters
+
+    return key, {
+        "key": key,
+        "type": "FilterPanel",
+        "props": props
+    }
+
+
+# ============================================
+# Document Components
+# ============================================
+
+def document_preview(
+    key: str,
+    title: str,
+    doc_type: str,
+    sections: list[dict],
+    status: str = None,
+    metadata: dict = None
+) -> tuple[str, dict]:
+    """Create a DocumentPreview element for generated documents.
+
+    Args:
+        key: Unique element key
+        title: Document title
+        doc_type: Document type ('invoice', 'report', 'letter', 'contract', 'receipt', 'custom')
+        sections: List of document sections, each with:
+            - heading: Optional section heading
+            - content: Section content (for lists, use newline-separated items)
+            - type: Section type ('text', 'table', 'list', 'signature')
+        status: Optional status ('draft', 'final', 'pending')
+        metadata: Optional metadata as {key: value} displayed at top
+
+    Example:
+        document_preview("invoice-001", "Invoice #001", "invoice", [
+            {"heading": "Bill To", "content": "John Doe\\n123 Main St"},
+            {"heading": "Items", "content": "Product A - $100\\nProduct B - $50", "type": "list"},
+            {"content": "Signature", "type": "signature"}
+        ], status="final", metadata={"Date": "2024-01-15", "Due": "2024-02-15"})
+    """
+    props = {
+        "title": title,
+        "type": doc_type,
+        "sections": sections,
+    }
+    if status:
+        props["status"] = status
+    if metadata:
+        props["metadata"] = metadata
+
+    return key, {
+        "key": key,
+        "type": "DocumentPreview",
+        "props": props
+    }
+
+
+# ============================================
 # Builder Helper
 # ============================================
 

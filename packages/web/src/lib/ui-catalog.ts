@@ -143,6 +143,39 @@ export const uiCatalog = createCatalog({
       }),
       description: 'List of items',
     },
+
+    // Form/Filter Components
+    FilterPanel: {
+      props: z.object({
+        title: z.string().optional(),
+        filters: z.array(z.object({
+          id: z.string(),
+          label: z.string(),
+          type: z.enum(['text', 'select', 'date', 'dateRange', 'checkbox', 'number']),
+          placeholder: z.string().optional(),
+          options: z.array(z.object({ label: z.string(), value: z.string() })).optional(),
+          value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]).optional(),
+        })),
+        activeFilters: z.record(z.string(), z.unknown()).optional(),
+      }),
+      description: 'Filter panel with various input types for querying/filtering data',
+    },
+
+    // Document Components
+    DocumentPreview: {
+      props: z.object({
+        title: z.string(),
+        type: z.enum(['invoice', 'report', 'letter', 'contract', 'receipt', 'custom']),
+        status: z.enum(['draft', 'final', 'pending']).optional(),
+        sections: z.array(z.object({
+          heading: z.string().optional(),
+          content: z.string(),
+          type: z.enum(['text', 'table', 'list', 'signature']).optional(),
+        })),
+        metadata: z.record(z.string(), z.string()).optional(),
+      }),
+      description: 'Document preview with sections, metadata, and action buttons',
+    },
   },
 
   actions: {
@@ -164,6 +197,20 @@ export const uiCatalog = createCatalog({
     submit: {
       params: z.object({ data: z.record(z.string(), z.unknown()) }),
       description: 'Submit form data',
+    },
+    applyFilter: {
+      params: z.object({ filters: z.record(z.string(), z.unknown()) }),
+      description: 'Apply filter criteria to query data',
+    },
+    clearFilters: {
+      description: 'Clear all active filters',
+    },
+    downloadDocument: {
+      params: z.object({ format: z.enum(['pdf', 'docx', 'txt']) }),
+      description: 'Download document in specified format',
+    },
+    printDocument: {
+      description: 'Print the document',
     },
   },
 
@@ -211,5 +258,28 @@ export type CatalogComponentProps = {
   List: {
     items: Array<{ label: string; value?: string; icon?: string }>;
     ordered?: boolean;
+  };
+  FilterPanel: {
+    title?: string;
+    filters: Array<{
+      id: string;
+      label: string;
+      type: 'text' | 'select' | 'date' | 'dateRange' | 'checkbox' | 'number';
+      placeholder?: string;
+      options?: Array<{ label: string; value: string }>;
+      value?: string | number | boolean | string[];
+    }>;
+    activeFilters?: Record<string, unknown>;
+  };
+  DocumentPreview: {
+    title: string;
+    type: 'invoice' | 'report' | 'letter' | 'contract' | 'receipt' | 'custom';
+    status?: 'draft' | 'final' | 'pending';
+    sections: Array<{
+      heading?: string;
+      content: string;
+      type?: 'text' | 'table' | 'list' | 'signature';
+    }>;
+    metadata?: Record<string, string>;
   };
 };

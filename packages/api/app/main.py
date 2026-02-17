@@ -33,6 +33,8 @@ from app.ui_trees import (
     text,
     divider,
     list_items,
+    filter_panel,
+    document_preview,
 )
 from app.auth import (
     validate_anthropic_setup_token,
@@ -182,6 +184,44 @@ TOOLS = [
             "properties": {},
         },
     },
+    {
+        "name": "show_filter_panel",
+        "description": "Display a filter panel for querying or filtering database records. Use this when the user wants to filter data, search a database, or set up query criteria.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "data_type": {
+                    "type": "string",
+                    "enum": ["users", "orders", "products", "custom"],
+                    "description": "The type of data to filter.",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Optional custom title for the filter panel.",
+                },
+            },
+            "required": ["data_type"],
+        },
+    },
+    {
+        "name": "generate_document",
+        "description": "Generate a document preview such as an invoice, report, letter, or contract. Use this when the user wants to create, generate, or preview a document.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "doc_type": {
+                    "type": "string",
+                    "enum": ["invoice", "report", "letter", "contract", "receipt"],
+                    "description": "The type of document to generate.",
+                },
+                "title": {
+                    "type": "string",
+                    "description": "Optional custom title for the document.",
+                },
+            },
+            "required": ["doc_type"],
+        },
+    },
 ]
 
 
@@ -206,6 +246,14 @@ Tools:
   Input: {}
   Use when: user asks about system status or progress.
 
+- show_filter_panel: Shows a filter/query panel for filtering database records.
+  Input: {"data_type": "users" or "orders" or "products" or "custom", "title": "optional title"}. data_type is required.
+  Use when: user wants to filter data, search a database, query records, or set up search criteria.
+
+- generate_document: Generates a document preview (invoice, report, letter, contract, receipt).
+  Input: {"doc_type": "invoice" or "report" or "letter" or "contract" or "receipt", "title": "optional title"}. doc_type is required.
+  Use when: user wants to create, generate, or preview a document like an invoice, report, letter, contract, or receipt.
+
 IMPORTANT: When you decide to call a tool, your ENTIRE response must be ONLY this JSON object with no other text before or after it — no explanation, no markdown, just the raw JSON:
 {"tool_call": {"name": "<tool_name>", "input": {<input_object>}}}
 
@@ -220,6 +268,28 @@ def parse_tool_call(text: str) -> dict | None:
         lines = cleaned.split('\n')
         end = len(lines) - 1 if lines[-1].strip() == '```' else len(lines)
         cleaned = '\n'.join(lines[1:end]).strip()
+
+    # Try to find JSON object containing tool_call, even if there's text before it
+    # Look for the start of the JSON object
+    json_start = cleaned.find('{"tool_call"')
+    if json_start == -1:
+        json_start = cleaned.find('{ "tool_call"')
+    if json_start != -1:
+        cleaned = cleaned[json_start:]
+        # Find the matching closing brace
+        brace_count = 0
+        json_end = 0
+        for i, char in enumerate(cleaned):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    json_end = i + 1
+                    break
+        if json_end > 0:
+            cleaned = cleaned[:json_end]
+
     try:
         parsed = json.loads(cleaned)
         if isinstance(parsed, dict) and "tool_call" in parsed:
@@ -351,6 +421,197 @@ def execute_tool(tool_name: str, tool_input: dict) -> dict:
         elements[card_key] = card_elem
 
         return create_ui_tree("status-card", elements)
+
+    elif tool_name == "show_filter_panel":
+        data_type = tool_input.get("data_type", "users")
+        title = tool_input.get("title")
+
+        # Define filters based on data type
+        if data_type == "users":
+            filters = [
+                {"id": "name", "label": "Name", "type": "text", "placeholder": "Search by name..."},
+                {"id": "email", "label": "Email", "type": "text", "placeholder": "Search by email..."},
+                {"id": "status", "label": "Status", "type": "select", "options": [
+                    {"label": "All Statuses", "value": "all"},
+                    {"label": "Active", "value": "active"},
+                    {"label": "Inactive", "value": "inactive"},
+                    {"label": "Pending", "value": "pending"},
+                ]},
+                {"id": "role", "label": "Role", "type": "select", "options": [
+                    {"label": "All Roles", "value": "all"},
+                    {"label": "Admin", "value": "admin"},
+                    {"label": "User", "value": "user"},
+                    {"label": "Guest", "value": "guest"},
+                ]},
+                {"id": "created_after", "label": "Created After", "type": "date"},
+                {"id": "verified", "label": "Email Verified", "type": "checkbox", "placeholder": "Only verified users"},
+            ]
+            title = title or "Filter Users"
+        elif data_type == "orders":
+            filters = [
+                {"id": "order_id", "label": "Order ID", "type": "text", "placeholder": "Search by order ID..."},
+                {"id": "customer", "label": "Customer", "type": "text", "placeholder": "Search by customer..."},
+                {"id": "status", "label": "Status", "type": "select", "options": [
+                    {"label": "All Statuses", "value": "all"},
+                    {"label": "Pending", "value": "pending"},
+                    {"label": "Processing", "value": "processing"},
+                    {"label": "Shipped", "value": "shipped"},
+                    {"label": "Delivered", "value": "delivered"},
+                    {"label": "Cancelled", "value": "cancelled"},
+                ]},
+                {"id": "min_total", "label": "Min Total ($)", "type": "number", "placeholder": "0"},
+                {"id": "max_total", "label": "Max Total ($)", "type": "number", "placeholder": "10000"},
+                {"id": "date_from", "label": "From Date", "type": "date"},
+                {"id": "date_to", "label": "To Date", "type": "date"},
+            ]
+            title = title or "Filter Orders"
+        elif data_type == "products":
+            filters = [
+                {"id": "name", "label": "Product Name", "type": "text", "placeholder": "Search products..."},
+                {"id": "category", "label": "Category", "type": "select", "options": [
+                    {"label": "All Categories", "value": "all"},
+                    {"label": "Electronics", "value": "electronics"},
+                    {"label": "Clothing", "value": "clothing"},
+                    {"label": "Home & Garden", "value": "home"},
+                    {"label": "Sports", "value": "sports"},
+                ]},
+                {"id": "min_price", "label": "Min Price ($)", "type": "number", "placeholder": "0"},
+                {"id": "max_price", "label": "Max Price ($)", "type": "number", "placeholder": "1000"},
+                {"id": "in_stock", "label": "In Stock", "type": "checkbox", "placeholder": "Only in-stock items"},
+            ]
+            title = title or "Filter Products"
+        else:
+            # Custom/generic filters
+            filters = [
+                {"id": "search", "label": "Search", "type": "text", "placeholder": "Search..."},
+                {"id": "category", "label": "Category", "type": "select", "options": [
+                    {"label": "All Categories", "value": "all"},
+                    {"label": "Option A", "value": "a"},
+                    {"label": "Option B", "value": "b"},
+                ]},
+                {"id": "date", "label": "Date", "type": "date"},
+            ]
+            title = title or "Filters"
+
+        elements = {}
+        fp_key, fp_elem = filter_panel("filter-panel", filters, title=title)
+        elements[fp_key] = fp_elem
+
+        return create_ui_tree("filter-panel", elements)
+
+    elif tool_name == "generate_document":
+        doc_type = tool_input.get("doc_type", "invoice")
+        title = tool_input.get("title")
+
+        elements = {}
+
+        if doc_type == "invoice":
+            doc_key, doc_elem = document_preview(
+                "invoice-doc",
+                title=title or "Invoice #INV-2024-001",
+                doc_type="invoice",
+                status="final",
+                metadata={
+                    "Invoice Date": "January 15, 2024",
+                    "Due Date": "February 15, 2024",
+                    "Invoice #": "INV-2024-001",
+                    "Payment Terms": "Net 30",
+                },
+                sections=[
+                    {"heading": "Bill To", "content": "Acme Corporation\n123 Business Ave\nNew York, NY 10001\ncontact@acme.com"},
+                    {"heading": "From", "content": "Your Company Inc.\n456 Commerce St\nLos Angeles, CA 90001"},
+                    {"heading": "Items", "content": "Web Development Services - $2,500.00\nUI/UX Design Package - $1,200.00\nMonthly Hosting (x3) - $150.00\nDomain Registration - $15.00", "type": "list"},
+                    {"heading": "Summary", "content": "Subtotal: $3,865.00\nTax (8%): $309.20\nTotal Due: $4,174.20"},
+                ]
+            )
+        elif doc_type == "report":
+            doc_key, doc_elem = document_preview(
+                "report-doc",
+                title=title or "Q4 2024 Performance Report",
+                doc_type="report",
+                status="final",
+                metadata={
+                    "Period": "Q4 2024",
+                    "Prepared By": "Analytics Team",
+                    "Date": "January 10, 2024",
+                },
+                sections=[
+                    {"heading": "Executive Summary", "content": "This report provides an overview of company performance for Q4 2024. Overall revenue increased by 15% compared to the previous quarter, with significant growth in the enterprise segment."},
+                    {"heading": "Key Metrics", "content": "Revenue: $2.4M (+15%)\nNew Customers: 127 (+23%)\nChurn Rate: 2.1% (-0.5%)\nNPS Score: 72 (+8)", "type": "list"},
+                    {"heading": "Highlights", "content": "Launched 3 new product features\nExpanded to 2 new markets\nAchieved SOC 2 compliance\nReduced support ticket volume by 18%", "type": "list"},
+                    {"heading": "Recommendations", "content": "Based on Q4 performance, we recommend focusing on enterprise sales expansion and investing in customer success initiatives to maintain low churn rates."},
+                ]
+            )
+        elif doc_type == "letter":
+            doc_key, doc_elem = document_preview(
+                "letter-doc",
+                title=title or "Business Letter",
+                doc_type="letter",
+                status="draft",
+                metadata={
+                    "Date": "January 15, 2024",
+                    "Ref": "BL-2024-001",
+                },
+                sections=[
+                    {"content": "Dear Valued Partner,"},
+                    {"content": "I am writing to express our sincere appreciation for your continued partnership over the past year. Your collaboration has been instrumental in our mutual success."},
+                    {"content": "As we move into 2024, we are excited to announce several new initiatives that will strengthen our partnership and create new opportunities for growth."},
+                    {"content": "We look forward to discussing these opportunities with you in our upcoming meeting scheduled for next month."},
+                    {"content": "Best regards,"},
+                    {"content": "John Smith, CEO", "type": "signature"},
+                ]
+            )
+        elif doc_type == "contract":
+            doc_key, doc_elem = document_preview(
+                "contract-doc",
+                title=title or "Service Agreement",
+                doc_type="contract",
+                status="pending",
+                metadata={
+                    "Contract #": "SA-2024-0042",
+                    "Effective Date": "February 1, 2024",
+                    "Term": "12 months",
+                },
+                sections=[
+                    {"heading": "Parties", "content": "This Service Agreement ('Agreement') is entered into between Your Company Inc. ('Provider') and Client Corporation ('Client')."},
+                    {"heading": "Scope of Services", "content": "Provider agrees to deliver:\nMonthly consulting services (40 hours)\nQuarterly strategy reviews\n24/7 technical support\nAccess to premium features", "type": "list"},
+                    {"heading": "Compensation", "content": "Client agrees to pay Provider $5,000 per month, due on the 1st of each month. Late payments are subject to a 1.5% monthly fee."},
+                    {"heading": "Term and Termination", "content": "This Agreement shall remain in effect for 12 months from the Effective Date. Either party may terminate with 30 days written notice."},
+                    {"content": "Provider Signature", "type": "signature"},
+                    {"content": "Client Signature", "type": "signature"},
+                ]
+            )
+        elif doc_type == "receipt":
+            doc_key, doc_elem = document_preview(
+                "receipt-doc",
+                title=title or "Payment Receipt",
+                doc_type="receipt",
+                status="final",
+                metadata={
+                    "Receipt #": "RCP-20240115-001",
+                    "Date": "January 15, 2024",
+                    "Payment Method": "Credit Card",
+                },
+                sections=[
+                    {"heading": "Received From", "content": "John Doe\njohn.doe@email.com"},
+                    {"heading": "Items Purchased", "content": "Premium Subscription (Annual) - $99.00\nSetup Fee - $25.00", "type": "list"},
+                    {"heading": "Payment Details", "content": "Subtotal: $124.00\nDiscount (10%): -$12.40\nTotal Paid: $111.60"},
+                    {"content": "Thank you for your purchase! This receipt confirms your payment has been processed successfully."},
+                ]
+            )
+        else:
+            doc_key, doc_elem = document_preview(
+                "custom-doc",
+                title=title or "Document",
+                doc_type="custom",
+                status="draft",
+                sections=[
+                    {"heading": "Content", "content": "Document content goes here."},
+                ]
+            )
+
+        elements[doc_key] = doc_elem
+        return create_ui_tree(doc_key, elements)
 
     return {"error": f"Unknown tool: {tool_name}"}
 
