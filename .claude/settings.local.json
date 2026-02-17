@@ -6,7 +6,17 @@
       "mcp__context7__get-library-docs",
       "Bash(git -C \"c:\\\\Users\\\\tiago\\\\Documents\\\\dev_projects\\\\my-ai-chat\" log --oneline -10)",
       "Bash(pnpm add:*)",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(npx tsc:*)",
+      "mcp__context7__query-docs",
+      "mcp__shadcn__view_items_in_registries",
+      "mcp__shadcn__get_add_command_for_items",
+      "mcp__shadcn__get_project_registries",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm why:*)",
+      "Bash(pnpm ls:*)",
+      "Bash(ls:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

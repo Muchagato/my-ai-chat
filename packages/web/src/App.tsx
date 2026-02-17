@@ -134,7 +134,7 @@ const ChatBotDemo = () => {
   // Loading state
   if (isAuthenticated === null) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-full">
         <Loader />
       </div>
     );
@@ -143,7 +143,7 @@ const ChatBotDemo = () => {
   // Not authenticated - show auth form
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen p-6">
+      <div className="flex items-center justify-center h-full p-6">
         <AuthForm
           onAuthenticated={() => setIsAuthenticated(true)}
         />
@@ -152,7 +152,7 @@ const ChatBotDemo = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
+    <div className="max-w-4xl mx-auto p-6 relative size-full h-full">
       <div className="flex flex-col h-full">
         <Conversation className="h-full">
           <ConversationContent>
