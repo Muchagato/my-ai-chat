@@ -19,7 +19,7 @@ export const routes: RouteConfig[] = [
     path: '/',
     label: 'Chat',
     icon: MessageSquareIcon,
-    page: lazy(() => import('./App')),
+    page: lazy(() => import('./pages/chat')),
     sidebar: lazy(() => import('./components/chat-sidebar')),
   },
   {

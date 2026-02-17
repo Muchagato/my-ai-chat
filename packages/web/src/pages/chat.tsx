@@ -82,7 +82,7 @@ const models = [
   },
 ];
 
-const ChatBotDemo = () => {
+export default function ChatPage() {
   const [input, setInput] = useState('');
   const [model, setModel] = useState<string>(models[0].value);
   const [webSearch, setWebSearch] = useState(false);
@@ -337,5 +337,4 @@ const ChatBotDemo = () => {
       </div>
     </div>
   );
-};
-export default ChatBotDemo;
+}

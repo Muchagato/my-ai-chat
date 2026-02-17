@@ -9,12 +9,32 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   RefreshCcwIcon,
   PresentationIcon,
   FileTextIcon,
+  UploadIcon,
+  ImageIcon,
 } from 'lucide-react'
+import { toast } from 'sonner'
+
+interface RefreshInput {
+  key: string
+  label: string
+  description: string
+  type: 'file' | 'images'
+  accept?: string
+}
 
 interface Automation {
   id: string
@@ -22,6 +42,7 @@ interface Automation {
   type: string
   lastUpdated: string
   status: 'up-to-date' | 'updating' | 'stale'
+  refreshInputs?: RefreshInput[]
 }
 
 const automations: Automation[] = [
@@ -31,6 +52,15 @@ const automations: Automation[] = [
     type: 'Primary Markets',
     lastUpdated: '2026-02-14T10:30:00Z',
     status: 'up-to-date',
+    refreshInputs: [
+      {
+        key: 'dealData',
+        label: 'Deal data',
+        description: 'Upload the Excel file with latest deal information',
+        type: 'file',
+        accept: '.xlsx,.xls,.csv',
+      }
+    ],
   },
   {
     id: 'credentials',
@@ -38,6 +68,15 @@ const automations: Automation[] = [
     type: 'Primary Markets',
     lastUpdated: '2026-02-12T16:45:00Z',
     status: 'up-to-date',
+    refreshInputs: [
+      {
+        key: 'credentialsData',
+        label: 'Credentials data',
+        description: 'Upload the Excel file with updated credentials',
+        type: 'file',
+        accept: '.xlsx,.xls,.csv',
+      },
+    ],
   },
 ]
 
@@ -57,12 +96,95 @@ const statusVariant = {
   stale: 'destructive',
 } as const
 
+function RefreshDialog({
+  automation,
+  open,
+  onOpenChange,
+}: {
+  automation: Automation
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const [files, setFiles] = useState<Record<string, FileList | null>>({})
+
+  const handleFileChange = (key: string, fileList: FileList | null) => {
+    setFiles((prev) => ({ ...prev, [key]: fileList }))
+  }
+
+  const handleRefresh = () => {
+    console.log(`Refreshing ${automation.id} with files:`, files)
+    toast.success(`Refreshing ${automation.name}...`)
+    setFiles({})
+    onOpenChange(false)
+  }
+
+  const inputs = automation.refreshInputs ?? []
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Refresh {automation.name}</DialogTitle>
+          <DialogDescription>
+            Provide the required files to refresh this automation. All fields
+            are optional — leave empty to use existing data.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-5 py-2">
+          {inputs.map((input) => (
+            <div key={input.key} className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                {input.type === 'images' ? (
+                  <ImageIcon className="size-4 text-muted-foreground" />
+                ) : (
+                  <UploadIcon className="size-4 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium">{input.label}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {input.description}
+              </p>
+              <Input
+                type="file"
+                accept={input.accept}
+                multiple={input.type === 'images'}
+                onChange={(e) => handleFileChange(input.key, e.target.files)}
+                className="cursor-pointer"
+              />
+              {files[input.key] && files[input.key]!.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {files[input.key]!.length} file(s) selected
+                </p>
+              )}
+            </div>
+          ))}
+          {inputs.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No additional inputs required. Click refresh to proceed.
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleRefresh}>
+            <RefreshCcwIcon className="size-4" />
+            Refresh
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export default function ContentUpdatePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [refreshTarget, setRefreshTarget] = useState<Automation | null>(null)
   const selected = automations.find((a) => a.id === selectedId)
 
-  const handleRefresh = (id: string) => {
-    console.log(`Refreshing automation: ${id}`)
+  const handleRefresh = (automation: Automation) => {
+    setRefreshTarget(automation)
   }
 
   const handleDownload = (id: string, format: 'pptx' | 'pdf') => {
@@ -71,6 +193,15 @@ export default function ContentUpdatePage() {
 
   return (
     <div className="flex flex-1 min-h-0">
+      {/* Refresh Dialog */}
+      {refreshTarget && (
+        <RefreshDialog
+          automation={refreshTarget}
+          open={!!refreshTarget}
+          onOpenChange={(open) => !open && setRefreshTarget(null)}
+        />
+      )}
+
       {/* Table Panel */}
       <div className="flex-1 border-r overflow-auto">
           <Table>
@@ -117,7 +248,7 @@ export default function ContentUpdatePage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => handleRefresh(item.id)}
+                            onClick={() => handleRefresh(item)}
                           >
                             <RefreshCcwIcon className="size-4" />
                           </Button>
@@ -188,7 +319,7 @@ export default function ContentUpdatePage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleRefresh(selected.id)}
+                    onClick={() => handleRefresh(selected)}
                   >
                     <RefreshCcwIcon className="size-4" />
                     Refresh

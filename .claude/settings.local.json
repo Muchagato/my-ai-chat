@@ -16,7 +16,8 @@
       "Bash(pnpm why:*)",
       "Bash(pnpm ls:*)",
       "Bash(ls:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(pnpm --filter web add:*)"
     ]
   }
 }
