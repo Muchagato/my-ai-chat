@@ -1,4 +1,4 @@
-import { MessageSquareIcon, FileTextIcon } from 'lucide-react'
+import { MessageSquareIcon, FileTextIcon, DatabaseIcon } from 'lucide-react'
 import type { ComponentType, LazyExoticComponent } from 'react'
 import { lazy } from 'react'
 
@@ -27,5 +27,11 @@ export const routes: RouteConfig[] = [
     label: 'Content Update',
     icon: FileTextIcon,
     page: lazy(() => import('./pages/content-update')),
+  },
+  {
+    path: '/data-layer',
+    label: 'Data Layer',
+    icon: DatabaseIcon,
+    page: lazy(() => import('./pages/data-layer')),
   },
 ]

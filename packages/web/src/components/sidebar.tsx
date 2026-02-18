@@ -6,7 +6,6 @@ import {
   SettingsIcon,
   CheckIcon,
   UserIcon,
-  LogOutIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { routes } from '@/routes'
@@ -28,22 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/theme-provider'
 import { toast } from 'sonner'
-
-interface ServiceConnection {
-  id: string
-  name: string
-  description: string
-  connected: boolean
-}
-
-const initialServices: ServiceConnection[] = [
-  {
-    id: 'bloomberg',
-    name: 'Bloomberg',
-    description: 'Market data, analytics and news',
-    connected: false,
-  }
-]
+import { useServices, type ServiceConnection } from '@/hooks/use-services'
 
 function ConnectServiceDialog({
   service,
@@ -127,20 +111,16 @@ function SettingsDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { theme, toggleTheme } = useTheme()
-  const [services, setServices] = useState(initialServices)
+  const { services, connect, disconnect } = useServices()
   const [connectingService, setConnectingService] =
     useState<ServiceConnection | null>(null)
 
   const handleConnected = (serviceId: string) => {
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, connected: true } : s))
-    )
+    connect(serviceId)
   }
 
   const handleDisconnect = (serviceId: string, name: string) => {
-    setServices((prev) =>
-      prev.map((s) => (s.id === serviceId ? { ...s, connected: false } : s))
-    )
+    disconnect(serviceId)
     toast(`Disconnected from ${name}`)
   }
 
@@ -269,7 +249,6 @@ function SettingsDialog({
 
 export function Railbar() {
   const location = useLocation()
-  const { theme, toggleTheme } = useTheme()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (

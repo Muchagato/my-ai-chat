@@ -89,16 +89,18 @@ export default function ChatSidebar() {
           </div>
           <div className="border-b">
             {mockPinnedChats.map((chat) => (
-              <button
+              <div
                 key={chat.id}
-                className="group flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-sidebar-accent transition-colors"
+                role="button"
+                tabIndex={0}
+                className="group flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-sidebar-accent transition-colors cursor-pointer"
               >
                 <PinIcon className="size-3.5 shrink-0 text-muted-foreground" />
                 <span className="truncate font-medium flex-1">
                   {chat.title}
                 </span>
                 <ChatItemMenu isPinned />
-              </button>
+              </div>
             ))}
           </div>
         </>
@@ -111,16 +113,18 @@ export default function ChatSidebar() {
       </div>
       <div className="flex-1 overflow-auto">
         {mockConversations.map((conv) => (
-          <button
+          <div
             key={conv.id}
-            className="group flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-sidebar-accent transition-colors"
+            role="button"
+            tabIndex={0}
+            className="group flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-sidebar-accent transition-colors cursor-pointer"
           >
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate font-medium">{conv.title}</span>
               <span className="text-xs text-muted-foreground">{conv.date}</span>
             </div>
             <ChatItemMenu />
-          </button>
+          </div>
         ))}
       </div>
     </div>
