@@ -164,19 +164,32 @@ function SettingsDialog({
                     Switch between light and dark mode
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleTheme}
-                  className="gap-1.5"
-                >
-                  {theme === 'dark' ? (
+                <div className="inline-flex items-center rounded-lg border p-0.5">
+                  <button
+                    onClick={() => theme !== 'light' && toggleTheme()}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                      theme === 'light'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
                     <SunIcon className="size-3.5" />
-                  ) : (
+                    Light
+                  </button>
+                  <button
+                    onClick={() => theme !== 'dark' && toggleTheme()}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                      theme === 'dark'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
                     <MoonIcon className="size-3.5" />
-                  )}
-                  {theme === 'dark' ? 'Light' : 'Dark'}
-                </Button>
+                    Dark
+                  </button>
+                </div>
               </div>
             </div>
 

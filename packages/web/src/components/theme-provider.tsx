@@ -21,6 +21,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const root = document.documentElement
     root.classList.toggle('dark', theme === 'dark')
+    root.dataset.agThemeMode = theme === 'dark' ? 'dark' : 'light'
     localStorage.setItem('theme', theme)
   }, [theme])
 

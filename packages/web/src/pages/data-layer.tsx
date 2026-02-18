@@ -9,6 +9,9 @@ import {
   TextFilterModule,
   NumberFilterModule,
   ValidationModule,
+  themeQuartz,
+  colorSchemeLight,
+  colorSchemeDark,
 } from 'ag-grid-community'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,6 +40,36 @@ ModuleRegistry.registerModules([
   NumberFilterModule,
   ...(import.meta.env.DEV ? [ValidationModule] : []),
 ])
+
+const gridTheme = themeQuartz
+  .withPart(colorSchemeLight)
+  .withParams(
+    {
+      backgroundColor: 'var(--background)',
+      foregroundColor: 'var(--foreground)',
+      borderColor: 'var(--border)',
+      headerBackgroundColor: 'var(--muted)',
+      headerTextColor: 'var(--foreground)',
+      rowHoverColor: 'var(--accent)',
+      selectedRowBackgroundColor: 'var(--accent)',
+      browserColorScheme: 'light',
+    },
+    'light',
+  )
+  .withPart(colorSchemeDark)
+  .withParams(
+    {
+      backgroundColor: 'var(--background)',
+      foregroundColor: 'var(--foreground)',
+      borderColor: 'var(--border)',
+      headerBackgroundColor: 'var(--muted)',
+      headerTextColor: 'var(--foreground)',
+      rowHoverColor: 'var(--accent)',
+      selectedRowBackgroundColor: 'var(--accent)',
+      browserColorScheme: 'dark',
+    },
+    'dark',
+  )
 
 // ── Mock Data ───────────────────────────────────────────────────────────────
 
@@ -367,6 +400,7 @@ export default function DataLayerPage() {
               </div>
             )}
             <AgGridReact
+              theme={gridTheme}
               rowData={filteredData}
               columnDefs={activeTabConfig.id === 'mydata' ? myDataCols : activeTabConfig.colDefs}
               defaultColDef={defaultColDef}
