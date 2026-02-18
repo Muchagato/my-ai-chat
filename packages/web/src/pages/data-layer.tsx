@@ -31,6 +31,7 @@ import {
 import { LockIcon, UploadIcon, SearchIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useServices } from '@/hooks/use-services'
+import { useTheme } from '@/components/theme-provider'
 
 ModuleRegistry.registerModules([
   CellStyleModule,
@@ -41,35 +42,19 @@ ModuleRegistry.registerModules([
   ...(import.meta.env.DEV ? [ValidationModule] : []),
 ])
 
-const gridTheme = themeQuartz
-  .withPart(colorSchemeLight)
-  .withParams(
-    {
-      backgroundColor: 'var(--background)',
-      foregroundColor: 'var(--foreground)',
-      borderColor: 'var(--border)',
-      headerBackgroundColor: 'var(--muted)',
-      headerTextColor: 'var(--foreground)',
-      rowHoverColor: 'var(--accent)',
-      selectedRowBackgroundColor: 'var(--accent)',
-      browserColorScheme: 'light',
-    },
-    'light',
-  )
-  .withPart(colorSchemeDark)
-  .withParams(
-    {
-      backgroundColor: 'var(--background)',
-      foregroundColor: 'var(--foreground)',
-      borderColor: 'var(--border)',
-      headerBackgroundColor: 'var(--muted)',
-      headerTextColor: 'var(--foreground)',
-      rowHoverColor: 'var(--accent)',
-      selectedRowBackgroundColor: 'var(--accent)',
-      browserColorScheme: 'dark',
-    },
-    'dark',
-  )
+function buildGridTheme(mode: 'light' | 'dark') {
+  const colorScheme = mode === 'dark' ? colorSchemeDark : colorSchemeLight
+  return themeQuartz.withPart(colorScheme).withParams({
+    backgroundColor: 'var(--background)',
+    foregroundColor: 'var(--foreground)',
+    borderColor: 'var(--border)',
+    headerBackgroundColor: 'var(--muted)',
+    headerTextColor: 'var(--foreground)',
+    rowHoverColor: 'var(--accent)',
+    selectedRowBackgroundColor: 'var(--accent)',
+    browserColorScheme: mode,
+  })
+}
 
 // ── Mock Data ───────────────────────────────────────────────────────────────
 
@@ -213,6 +198,8 @@ function MyDataUpload({
 
 export default function DataLayerPage() {
   const { services } = useServices()
+  const { theme } = useTheme()
+  const gridTheme = useMemo(() => buildGridTheme(theme), [theme])
   const [activeTab, setActiveTab] = useState('issuance')
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
