@@ -52,6 +52,8 @@ function buildGridTheme(mode: 'light' | 'dark') {
     headerTextColor: 'var(--foreground)',
     rowHoverColor: 'var(--accent)',
     selectedRowBackgroundColor: 'var(--accent)',
+    rangeSelectionBorderColor: 'var(--primary)',
+    rangeSelectionBackgroundColor: 'color-mix(in srgb, var(--primary) 10%, transparent)',
     browserColorScheme: mode,
   })
 }
