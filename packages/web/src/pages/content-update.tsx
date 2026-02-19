@@ -203,17 +203,13 @@ function WorkspacePanel({
 }
 
 export default function ContentUpdatePage() {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeWorkspace, setActiveWorkspace] = useState<string | null>(null)
 
   const activeAutomation = automations.find((a) => a.id === activeWorkspace)
-  const selected = automations.find(
-    (a) => a.id === (activeWorkspace ?? selectedId),
-  )
+  const selected = activeAutomation
 
   const handleRowClick = (id: string) => {
     setActiveWorkspace(id)
-    setSelectedId(id)
   }
 
   const handleBack = () => {
@@ -244,7 +240,7 @@ export default function ContentUpdatePage() {
               {automations.map((item) => (
                 <TableRow
                   key={item.id}
-                  data-state={selectedId === item.id ? 'selected' : undefined}
+                  data-state={activeWorkspace === item.id ? 'selected' : undefined}
                   className="cursor-pointer"
                   onClick={() => handleRowClick(item.id)}
                 >
