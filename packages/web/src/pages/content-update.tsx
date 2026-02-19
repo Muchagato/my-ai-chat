@@ -166,19 +166,7 @@ function WorkspacePanel({
           <ArrowLeftIcon className="size-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold truncate">{automation.name}</h2>
-            <Badge variant={statusVariant[automation.status]}>
-              {automation.status === 'up-to-date'
-                ? 'Up to date'
-                : automation.status === 'updating'
-                  ? 'Updating...'
-                  : 'Stale'}
-            </Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Last updated {formatDate(automation.lastUpdated)}
-          </p>
+          <h2 className="font-semibold truncate">{automation.name}</h2>
         </div>
       </div>
 
@@ -232,8 +220,8 @@ export default function ContentUpdatePage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Last Updated</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last Updated</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -248,9 +236,6 @@ export default function ContentUpdatePage() {
                   <TableCell>
                     <Badge variant="outline">{item.type}</Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(item.lastUpdated)}
-                  </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[item.status]}>
                       {item.status === 'up-to-date'
@@ -259,6 +244,9 @@ export default function ContentUpdatePage() {
                           ? 'Updating...'
                           : 'Stale'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {formatDate(item.lastUpdated)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -272,14 +260,18 @@ export default function ContentUpdatePage() {
         {selected ? (
           <div className="flex flex-col h-full">
             {/* Preview Header */}
-            <div className="flex items-center justify-between px-6 py-3 border-b">
-              <div>
-                <h2 className="font-semibold">{selected.name}</h2>
-                <p className="text-xs text-muted-foreground">
-                  Last updated {formatDate(selected.lastUpdated)}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="grid grid-cols-3 items-center px-6 py-3 border-b">
+              <Badge variant={statusVariant[selected.status]} className="w-fit">
+                {selected.status === 'up-to-date'
+                  ? 'Up to date'
+                  : selected.status === 'updating'
+                    ? 'Updating...'
+                    : 'Stale'}
+              </Badge>
+              <p className="text-xs text-muted-foreground text-center">
+                Last updated {formatDate(selected.lastUpdated)}
+              </p>
+              <div className="flex items-center gap-2 justify-end">
                 <Button
                   variant="outline"
                   size="sm"
