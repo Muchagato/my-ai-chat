@@ -23,7 +23,7 @@ export const routes: RouteConfig[] = [
     sidebar: lazy(() => import('./components/chat-sidebar')),
   },
   {
-    path: '/content-update',
+    path: '/content-update/:id?',
     label: 'Content Update',
     icon: FileTextIcon,
     page: lazy(() => import('./pages/content-update')),

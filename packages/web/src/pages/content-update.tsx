@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -234,50 +235,54 @@ function WorkspacePanel({
 }
 
 export default function ContentUpdatePage() {
-  const [activeWorkspace, setActiveWorkspace] = useState<string | null>(null)
+  const { id } = useParams<{ id?: string }>()
+  const navigate = useNavigate()
+
   const [previews, setPreviews] = useState<string[]>([])
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
   const [fetchedLastUpdated, setFetchedLastUpdated] = useState<string | null>(null)
 
-  const activeAutomation = automations.find((a) => a.id === activeWorkspace)
-  const selected = activeAutomation
+  const selected = automations.find((a) => a.id === id)
 
   const updatePreviews = (images: string[]) => {
     setPreviews(images)
     setCurrentSlide(0)
   }
 
-  const handleRowClick = async (id: string) => {
-    setActiveWorkspace(id)
+  // Fetch previews + metadata whenever the URL param changes
+  useEffect(() => {
     updatePreviews([])
     setFetchedLastUpdated(null)
-    try {
-      const [previewsData, meta] = await Promise.all([
-        getSlidesPreviews(id),
-        getSlidesMetadata(id),
-      ])
-      updatePreviews(previewsData.images)
-      setFetchedLastUpdated(meta?.lastUpdated ?? null)
-    } catch {
-      // stubs return empty data — fail silently
-    }
+    if (!id) return
+
+    let cancelled = false
+    Promise.all([getSlidesPreviews(id), getSlidesMetadata(id)])
+      .then(([previewsData, meta]) => {
+        if (cancelled) return
+        updatePreviews(previewsData.images)
+        setFetchedLastUpdated(meta?.lastUpdated ?? null)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [id])
+
+  const handleRowClick = (rowId: string) => {
+    navigate(`/content-update/${rowId}`)
   }
 
   const handleBack = () => {
-    setActiveWorkspace(null)
-    updatePreviews([])
-    setFetchedLastUpdated(null)
+    navigate('/content-update')
   }
 
   const handleRefresh = async () => {
-    if (!activeWorkspace) return
+    if (!id) return
     setIsGenerating(true)
     try {
-      await generateSlides(activeWorkspace)
+      await generateSlides(id)
       const [previewsData, meta] = await Promise.all([
-        getSlidesPreviews(activeWorkspace),
-        getSlidesMetadata(activeWorkspace),
+        getSlidesPreviews(id),
+        getSlidesMetadata(id),
       ])
       updatePreviews(previewsData.images)
       setFetchedLastUpdated(meta?.lastUpdated ?? null)
@@ -289,9 +294,9 @@ export default function ContentUpdatePage() {
     }
   }
 
-  const handleDownload = async (id: string, format: 'pptx' | 'pdf') => {
+  const handleDownload = async (docId: string, format: 'pptx' | 'pdf') => {
     try {
-      const { content, filename, mimeType } = await downloadSlides(id, format)
+      const { content, filename, mimeType } = await downloadSlides(docId, format)
       const link = document.createElement('a')
       link.href = `data:${mimeType};base64,${content}`
       link.download = filename
@@ -309,9 +314,9 @@ export default function ContentUpdatePage() {
     <div className="flex flex-1 min-h-0">
       {/* Left Panel: Table or Workspace */}
       <div className="flex-1 border-r overflow-auto">
-        {activeAutomation ? (
+        {selected ? (
           <WorkspacePanel
-            automation={activeAutomation}
+            automation={selected}
             onBack={handleBack}
             onRefresh={handleRefresh}
             isGenerating={isGenerating}
