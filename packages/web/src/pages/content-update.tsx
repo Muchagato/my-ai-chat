@@ -20,6 +20,35 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+// ─── API stubs ────────────────────────────────────────────────────────────────
+// TODO: replace with Orval-generated client once endpoints are ready.
+
+async function generateSlides(_documentType: string): Promise<{ status: string }> {
+  // POST /slides/generate  { documentType }
+  await new Promise((r) => setTimeout(r, 800)) // fake latency
+  return { status: 'ok' }
+}
+
+async function getSlidesPreviews(_documentType: string): Promise<{ images: string[] }> {
+  // GET /slides/previews?documentType=...
+  return { images: [] }
+}
+
+async function downloadSlides(
+  _documentType: string,
+  _format: 'pdf' | 'pptx',
+): Promise<{ content: string; filename: string; mimeType: string }> {
+  // GET /slides/download?documentType=...&format=...
+  throw new Error('not implemented yet')
+}
+
+async function getSlidesMetadata(_documentType: string): Promise<{ lastUpdated: string }> {
+  // GET /slides/metadata?documentType=...
+  return { lastUpdated: new Date().toISOString() }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface WorkspaceSection {
   key: string
   title: string
@@ -150,14 +179,14 @@ function WorkspaceSectionRenderer({ section }: { section: WorkspaceSection }) {
 function WorkspacePanel({
   automation,
   onBack,
+  onRefresh,
+  isGenerating,
 }: {
   automation: Automation
   onBack: () => void
+  onRefresh: () => void
+  isGenerating: boolean
 }) {
-  const handleRefresh = () => {
-    toast.success(`Refreshing ${automation.name}...`)
-  }
-
   return (
     <div className="flex flex-col h-full">
       {/* Workspace Header */}
@@ -181,9 +210,9 @@ function WorkspacePanel({
 
       {/* Refresh Button */}
       <div className="border-t px-4 py-3">
-        <Button className="w-full" onClick={handleRefresh}>
-          <RefreshCcwIcon className="size-4" />
-          Refresh
+        <Button className="w-full" onClick={onRefresh} disabled={isGenerating}>
+          <RefreshCcwIcon className={`size-4 ${isGenerating ? 'animate-spin' : ''}`} />
+          {isGenerating ? 'Generating...' : 'Refresh'}
         </Button>
       </div>
     </div>
@@ -192,20 +221,60 @@ function WorkspacePanel({
 
 export default function ContentUpdatePage() {
   const [activeWorkspace, setActiveWorkspace] = useState<string | null>(null)
+  const [previews, setPreviews] = useState<string[]>([])
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [fetchedLastUpdated, setFetchedLastUpdated] = useState<string | null>(null)
 
   const activeAutomation = automations.find((a) => a.id === activeWorkspace)
   const selected = activeAutomation
 
-  const handleRowClick = (id: string) => {
+  const handleRowClick = async (id: string) => {
     setActiveWorkspace(id)
+    setPreviews([])
+    setFetchedLastUpdated(null)
+    try {
+      const [previewsData, meta] = await Promise.all([
+        getSlidesPreviews(id),
+        getSlidesMetadata(id),
+      ])
+      setPreviews(previewsData.images)
+      setFetchedLastUpdated(meta.lastUpdated)
+    } catch {
+      // stubs return empty data — fail silently
+    }
   }
 
   const handleBack = () => {
     setActiveWorkspace(null)
+    setPreviews([])
+    setFetchedLastUpdated(null)
   }
 
-  const handleDownload = (id: string, format: 'pptx' | 'pdf') => {
-    console.log(`Downloading ${format} for: ${id}`)
+  const handleRefresh = async () => {
+    if (!activeWorkspace) return
+    setIsGenerating(true)
+    try {
+      await generateSlides(activeWorkspace)
+      const data = await getSlidesPreviews(activeWorkspace)
+      setPreviews(data.images)
+      toast.success('Slides generated successfully')
+    } catch {
+      toast.error('Failed to generate slides')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleDownload = async (id: string, format: 'pptx' | 'pdf') => {
+    try {
+      const { content, filename, mimeType } = await downloadSlides(id, format)
+      const link = document.createElement('a')
+      link.href = `data:${mimeType};base64,${content}`
+      link.download = filename
+      link.click()
+    } catch {
+      toast.error('Download not available yet')
+    }
   }
 
   return (
@@ -213,7 +282,12 @@ export default function ContentUpdatePage() {
       {/* Left Panel: Table or Workspace */}
       <div className="flex-1 border-r overflow-auto">
         {activeAutomation ? (
-          <WorkspacePanel automation={activeAutomation} onBack={handleBack} />
+          <WorkspacePanel
+            automation={activeAutomation}
+            onBack={handleBack}
+            onRefresh={handleRefresh}
+            isGenerating={isGenerating}
+          />
         ) : (
           <Table>
             <TableHeader>
@@ -269,7 +343,7 @@ export default function ContentUpdatePage() {
                     : 'Stale'}
               </Badge>
               <p className="text-xs text-muted-foreground text-center">
-                Last updated {formatDate(selected.lastUpdated)}
+                Last updated {formatDate(fetchedLastUpdated ?? selected.lastUpdated)}
               </p>
               <div className="flex items-center gap-2 justify-end">
                 <Button
@@ -292,20 +366,33 @@ export default function ContentUpdatePage() {
             </div>
 
             {/* Preview Body */}
-            <div className="flex-1 flex items-center justify-center bg-muted/30 p-6">
-              <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-                <div className="rounded-lg border bg-card p-8 shadow-sm">
-                  <FileTextIcon className="size-16 text-muted-foreground/50 mx-auto" />
-                </div>
-                <div>
-                  <p className="font-medium">{selected.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Document preview will be displayed here once the backend
-                    integration is connected.
-                  </p>
+            {previews.length > 0 ? (
+              <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
+                {previews.map((src, i) => (
+                  <img
+                    key={i}
+                    src={`data:image/png;base64,${src}`}
+                    alt={`Slide ${i + 1}`}
+                    className="w-full rounded border shadow-sm"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center bg-muted/30 p-6">
+                <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+                  <div className="rounded-lg border bg-card p-8 shadow-sm">
+                    <FileTextIcon className="size-16 text-muted-foreground/50 mx-auto" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{selected.name}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Document preview will be displayed here once the backend
+                      integration is connected.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-center">
