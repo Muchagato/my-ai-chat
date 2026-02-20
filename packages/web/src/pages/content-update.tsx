@@ -17,6 +17,8 @@ import {
   UploadIcon,
   ArrowLeftIcon,
   SettingsIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -42,9 +44,33 @@ async function downloadSlides(
   throw new Error('not implemented yet')
 }
 
-async function getSlidesMetadata(_documentType: string): Promise<{ lastUpdated: string }> {
+async function getSlidesMetadata(
+  _documentType: string,
+): Promise<{ lastUpdated: string } | null> {
   // GET /slides/metadata?documentType=...
-  return { lastUpdated: new Date().toISOString() }
+  return null // stub returns null until real endpoint is connected
+}
+
+// ─── Status derivation ───────────────────────────────────────────────────────
+
+type DerivedStatus = 'up-to-date' | 'outdated' | 'stale' | 'unknown'
+
+function deriveStatus(lastUpdated: string | null): DerivedStatus {
+  if (!lastUpdated) return 'unknown'
+  const days = (Date.now() - new Date(lastUpdated).getTime()) / 86_400_000
+  if (days < 7) return 'up-to-date'
+  if (days < 14) return 'outdated'
+  return 'stale'
+}
+
+const statusConfig: Record<
+  DerivedStatus,
+  { variant: 'secondary' | 'default' | 'destructive' | 'outline'; label: string }
+> = {
+  'up-to-date': { variant: 'secondary', label: 'Up to date' },
+  outdated:     { variant: 'default',   label: 'Outdated' },
+  stale:        { variant: 'destructive', label: 'Stale' },
+  unknown:      { variant: 'outline',   label: '-' },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,7 +89,6 @@ interface Automation {
   name: string
   type: string
   lastUpdated: string
-  status: 'up-to-date' | 'updating' | 'stale'
   workspace: WorkspaceSection[]
 }
 
@@ -73,7 +98,6 @@ const automations: Automation[] = [
     name: 'Tombstones',
     type: 'Primary Markets',
     lastUpdated: '2026-02-14T10:30:00Z',
-    status: 'up-to-date',
     workspace: [
       {
         key: 'dealData',
@@ -89,7 +113,6 @@ const automations: Automation[] = [
     name: 'Credentials',
     type: 'Primary Markets',
     lastUpdated: '2026-02-12T16:45:00Z',
-    status: 'up-to-date',
     workspace: [
       {
         key: 'credentialsData',
@@ -117,12 +140,6 @@ function formatDate(dateStr: string) {
     minute: '2-digit',
   })
 }
-
-const statusVariant = {
-  'up-to-date': 'secondary',
-  updating: 'default',
-  stale: 'destructive',
-} as const
 
 function FileUploadSection({ section }: { section: WorkspaceSection }) {
   const [files, setFiles] = useState<FileList | null>(null)
@@ -189,7 +206,6 @@ function WorkspacePanel({
 }) {
   return (
     <div className="flex flex-col h-full">
-      {/* Workspace Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b">
         <Button variant="ghost" size="icon-sm" onClick={onBack}>
           <ArrowLeftIcon className="size-4" />
@@ -199,7 +215,6 @@ function WorkspacePanel({
         </div>
       </div>
 
-      {/* Workspace Sections */}
       <div className="flex-1 overflow-auto p-4">
         <div className="flex flex-col gap-6">
           {automation.workspace.map((section) => (
@@ -208,7 +223,6 @@ function WorkspacePanel({
         </div>
       </div>
 
-      {/* Refresh Button */}
       <div className="border-t px-4 py-3">
         <Button className="w-full" onClick={onRefresh} disabled={isGenerating}>
           <RefreshCcwIcon className={`size-4 ${isGenerating ? 'animate-spin' : ''}`} />
@@ -222,23 +236,29 @@ function WorkspacePanel({
 export default function ContentUpdatePage() {
   const [activeWorkspace, setActiveWorkspace] = useState<string | null>(null)
   const [previews, setPreviews] = useState<string[]>([])
+  const [currentSlide, setCurrentSlide] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
   const [fetchedLastUpdated, setFetchedLastUpdated] = useState<string | null>(null)
 
   const activeAutomation = automations.find((a) => a.id === activeWorkspace)
   const selected = activeAutomation
 
+  const updatePreviews = (images: string[]) => {
+    setPreviews(images)
+    setCurrentSlide(0)
+  }
+
   const handleRowClick = async (id: string) => {
     setActiveWorkspace(id)
-    setPreviews([])
+    updatePreviews([])
     setFetchedLastUpdated(null)
     try {
       const [previewsData, meta] = await Promise.all([
         getSlidesPreviews(id),
         getSlidesMetadata(id),
       ])
-      setPreviews(previewsData.images)
-      setFetchedLastUpdated(meta.lastUpdated)
+      updatePreviews(previewsData.images)
+      setFetchedLastUpdated(meta?.lastUpdated ?? null)
     } catch {
       // stubs return empty data — fail silently
     }
@@ -246,7 +266,7 @@ export default function ContentUpdatePage() {
 
   const handleBack = () => {
     setActiveWorkspace(null)
-    setPreviews([])
+    updatePreviews([])
     setFetchedLastUpdated(null)
   }
 
@@ -255,8 +275,12 @@ export default function ContentUpdatePage() {
     setIsGenerating(true)
     try {
       await generateSlides(activeWorkspace)
-      const data = await getSlidesPreviews(activeWorkspace)
-      setPreviews(data.images)
+      const [previewsData, meta] = await Promise.all([
+        getSlidesPreviews(activeWorkspace),
+        getSlidesMetadata(activeWorkspace),
+      ])
+      updatePreviews(previewsData.images)
+      setFetchedLastUpdated(meta?.lastUpdated ?? null)
       toast.success('Slides generated successfully')
     } catch {
       toast.error('Failed to generate slides')
@@ -276,6 +300,10 @@ export default function ContentUpdatePage() {
       toast.error('Download not available yet')
     }
   }
+
+  // Derived status for preview header — based on fetched metadata
+  const previewStatus = deriveStatus(fetchedLastUpdated)
+  const { variant: previewVariant, label: previewLabel } = statusConfig[previewStatus]
 
   return (
     <div className="flex flex-1 min-h-0">
@@ -299,51 +327,46 @@ export default function ContentUpdatePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {automations.map((item) => (
-                <TableRow
-                  key={item.id}
-                  data-state={activeWorkspace === item.id ? 'selected' : undefined}
-                  className="cursor-pointer"
-                  onClick={() => handleRowClick(item.id)}
-                >
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{item.type}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant[item.status]}>
-                      {item.status === 'up-to-date'
-                        ? 'Up to date'
-                        : item.status === 'updating'
-                          ? 'Updating...'
-                          : 'Stale'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {formatDate(item.lastUpdated)}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {automations.map((item) => {
+                const status = deriveStatus(item.lastUpdated)
+                const { variant, label } = statusConfig[status]
+                return (
+                  <TableRow
+                    key={item.id}
+                    className="cursor-pointer"
+                    onClick={() => handleRowClick(item.id)}
+                  >
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{item.type}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={variant}>{label}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {formatDate(item.lastUpdated)}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         )}
       </div>
 
       {/* Preview Panel */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-hidden">
         {selected ? (
           <div className="flex flex-col h-full">
             {/* Preview Header */}
             <div className="grid grid-cols-3 items-center px-6 py-3 border-b">
-              <Badge variant={statusVariant[selected.status]} className="w-fit">
-                {selected.status === 'up-to-date'
-                  ? 'Up to date'
-                  : selected.status === 'updating'
-                    ? 'Updating...'
-                    : 'Stale'}
+              <Badge variant={previewVariant} className="w-fit">
+                {previewLabel}
               </Badge>
               <p className="text-xs text-muted-foreground text-center">
-                Last updated {formatDate(fetchedLastUpdated ?? selected.lastUpdated)}
+                {fetchedLastUpdated
+                  ? `Last updated ${formatDate(fetchedLastUpdated)}`
+                  : 'Last updated –'}
               </p>
               <div className="flex items-center gap-2 justify-end">
                 <Button
@@ -367,15 +390,37 @@ export default function ContentUpdatePage() {
 
             {/* Preview Body */}
             {previews.length > 0 ? (
-              <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
-                {previews.map((src, i) => (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Slide image */}
+                <div className="flex-1 overflow-hidden flex items-center justify-center p-6 bg-muted/30">
                   <img
-                    key={i}
-                    src={`data:image/png;base64,${src}`}
-                    alt={`Slide ${i + 1}`}
-                    className="w-full rounded border shadow-sm"
+                    src={`data:image/png;base64,${previews[currentSlide]}`}
+                    alt={`Slide ${currentSlide + 1}`}
+                    className="max-h-full max-w-full rounded border shadow-sm object-contain"
                   />
-                ))}
+                </div>
+                {/* Slide navigation */}
+                <div className="flex items-center justify-center gap-3 px-4 py-3 border-t">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setCurrentSlide((s) => s - 1)}
+                    disabled={currentSlide === 0}
+                  >
+                    <ChevronLeftIcon className="size-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {currentSlide + 1} / {previews.length}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setCurrentSlide((s) => s + 1)}
+                    disabled={currentSlide === previews.length - 1}
+                  >
+                    <ChevronRightIcon className="size-4" />
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-center bg-muted/30 p-6">
