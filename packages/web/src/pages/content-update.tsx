@@ -71,7 +71,7 @@ const statusConfig: Record<
   'up-to-date': { variant: 'secondary', label: 'Up to date' },
   outdated:     { variant: 'default',   label: 'Outdated' },
   stale:        { variant: 'destructive', label: 'Stale' },
-  unknown:      { variant: 'outline',   label: '-' },
+  unknown:      { variant: 'outline',   label: 'Pending' },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -242,6 +242,7 @@ export default function ContentUpdatePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
   const [fetchedLastUpdated, setFetchedLastUpdated] = useState<string | null>(null)
+  const [metadataMap, setMetadataMap] = useState<Record<string, string | null>>({})
 
   const selected = automations.find((a) => a.id === id)
 
@@ -249,6 +250,22 @@ export default function ContentUpdatePage() {
     setPreviews(images)
     setCurrentSlide(0)
   }
+
+  const updateDocMetadata = (docId: string, lastUpdated: string | null) => {
+    setFetchedLastUpdated(lastUpdated)
+    setMetadataMap((prev) => ({ ...prev, [docId]: lastUpdated }))
+  }
+
+  // Fetch metadata for every row on mount so the table shows live data
+  useEffect(() => {
+    Promise.all(
+      automations.map((a) =>
+        getSlidesMetadata(a.id)
+          .then((meta) => [a.id, meta?.lastUpdated ?? null] as const)
+          .catch(() => [a.id, null] as const)
+      )
+    ).then((entries) => setMetadataMap(Object.fromEntries(entries)))
+  }, [])
 
   // Fetch previews + metadata whenever the URL param changes
   useEffect(() => {
@@ -261,7 +278,7 @@ export default function ContentUpdatePage() {
       .then(([previewsData, meta]) => {
         if (cancelled) return
         updatePreviews(previewsData.images)
-        setFetchedLastUpdated(meta?.lastUpdated ?? null)
+        updateDocMetadata(id, meta?.lastUpdated ?? null)
       })
       .catch(() => {})
     return () => { cancelled = true }
@@ -285,7 +302,7 @@ export default function ContentUpdatePage() {
         getSlidesMetadata(id),
       ])
       updatePreviews(previewsData.images)
-      setFetchedLastUpdated(meta?.lastUpdated ?? null)
+      updateDocMetadata(id, meta?.lastUpdated ?? null)
       toast.success('Slides generated successfully')
     } catch {
       toast.error('Failed to generate slides')
@@ -333,7 +350,8 @@ export default function ContentUpdatePage() {
             </TableHeader>
             <TableBody>
               {automations.map((item) => {
-                const status = deriveStatus(item.lastUpdated)
+                const rowLastUpdated = metadataMap[item.id] ?? null
+                const status = deriveStatus(rowLastUpdated)
                 const { variant, label } = statusConfig[status]
                 return (
                   <TableRow
@@ -349,7 +367,7 @@ export default function ContentUpdatePage() {
                       <Badge variant={variant}>{label}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {formatDate(item.lastUpdated)}
+                      {rowLastUpdated ? formatDate(rowLastUpdated) : '–'}
                     </TableCell>
                   </TableRow>
                 )
